@@ -25,6 +25,7 @@ CHANNEL=$(jq --raw-output ".channel" $CONFIG_PATH)
 ADDRESS=$(jq --raw-output ".address" $CONFIG_PATH)
 NETMASK=$(jq --raw-output ".netmask" $CONFIG_PATH)
 BROADCAST=$(jq --raw-output ".broadcast" $CONFIG_PATH)
+IP_FORWARD=$(jq --raw-output ".ip_forward" $CONFIG_PATH)
 
 # Enforces required env variables
 required_vars=(SSID WPA_PASSPHRASE CHANNEL ADDRESS NETMASK BROADCAST)
@@ -60,5 +61,11 @@ echo "broadcast $BROADCAST"$'\n' >> /etc/network/interfaces
 ifdown wlan0
 ifup wlan0
 
+if [[ "xtrue" == "x$IP_FORWARD" ]]; then
+  echo 1 > /proc/sys/net/ipv4/ip_forward
+  iptables -t nat -A  POSTROUTING -o eth0 -j MASQUERADE
+fi
+
 echo "Starting HostAP daemon ..."
 hostapd -d /hostapd.conf & wait ${!}
+
